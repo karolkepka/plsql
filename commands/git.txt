@@ -1,0 +1,4 @@
+git add . (new or changed  without deleted)
+git commit -m 'info info'
+git push origin master
+git push nordea master
