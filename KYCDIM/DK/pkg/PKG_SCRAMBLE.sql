@@ -154,7 +154,7 @@ AS
       l_json := json_rec.json;
       pkg_scramble.scr_obj(l_json, 'TAX.DOMECILE.TIN.1+text');
       l_pn   := pkg_scramble.get_value(l_json, 'personNo');
-      l_pn_n := SUBSTR(l_pn, 1,6) || l_pn_cnt;
+      l_pn_n := SUBSTR(l_pn, 1,7) || l_pn_cnt;
       --pkg_scramble.scr_obj(l_json, 'personNo');
       pkg_scramble.scr_obj(l_json, 'firstName');
       pkg_scramble.scr_obj(l_json, 'lastName');
@@ -182,7 +182,7 @@ AS
       IF l_pn_cnt = '999' THEN
         l_pn_cnt := '001';
       END IF;
-      l_pn_cnt := lpad( l_pn_cnt + 1, 4, 0 );
+      l_pn_cnt := lpad( l_pn_cnt + 1, 3, 0 );
     END LOOP;
     COMMIT;
   END deplo;
