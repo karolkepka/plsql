@@ -1,0 +1,186 @@
+AWS DMS Privileges:
+dms:CreateEndpoint - Allows the user to create a source or target endpoint for AWS DMS. 
+dms:CreateReplicationInstance - Enables the user to create a replication instance. 
+dms:CreateReplicationTask - Grants the user the ability to create a replication task that specifies the source and target endpoints and migration settings.
+dms:TestConnection - Allows the user to test the connectivity between the source and target endpoints.
+dms:StartReplicationTask - Enables the user to start the replication task.
+dms:StopReplicationTask - Enables the user to stop the replication task.
+dms:DescribeReplicationInstances - Enables the user to view replication instances details.
+dms:DescribeReplications - Enables the user to view and describe created replications.
+
+dms:CreateDataProvider
+dms:CreateInstanceProfile
+dms:CreateMigrationProject
+dms:DescribeDataProviders
+dms:TestConnection
+
+dms:*
+
+User: arn:aws:iam::056197083322:user/crayon_kkpeka is not authorized to perform: iam:CreateRole on resource: arn:aws:iam::056197083322:role/dms-access-for-endpoint
+User: arn:aws:iam::056197083322:user/crayon_kkpeka is not authorized to perform: iam:CreateRole on resource: arn:aws:iam::056197083322:role/dms-vpc-role
+
+AWS Oracle migration User Privileges:
+The IAM user or role associated with the Oracle source database must have the necessary privileges to perform data extraction. These privileges include (apart from querying source tables from DATA and VISTA_UNICA schemas). I suggest creating dedicated Oracle user just for replication, ex REDSHIFT_REPLICATION, having privileges:
+SELECT on all tables and V_PH_ORDER view (need to check what tables are behind this database view by analysing source - we can't have access to the view's source) from DATA and VISTA_UNICA schemas.
+SELECT_CATALOG_ROLE - Allows extraction of metadata from the Oracle source database.
+SELECT ANY TABLE - Grants the ability to extract data from tables in the source database.
+LOGMINING - Required if using Oracle LogMiner for real-time change data capture (CDC). Additional privileges specific to LogMiner may also be necessary.
+AWS Redshift Privileges:
+
+The IAM user or role associated with the Redshift target database must have the necessary privileges to perform data loading. I suggest creating separate user, ex ORACLE_REPLICATION having below privileges:
+
+CREATE - Allows the creation of temporary tables during the migration process in PUBLIC schema (or other schema name created for storing replicated ORACLE tables) of DC_BIGTABLE_CLIENTES database
+INSERT - Grants the ability to insert data into the target tables created in PUBLIC schema 
+CREATE - Allows the creation of temporary tables during the migration process in PUBLIC schema (or other schema name created for storing replicated ORACLE tables) of DC_BIGTABLE_CLIENTES database
+ALTER - Enables modification of the target tables as required by the migration process.
+DROP - Allows dropping of temporary tables after the migration process.
+
+
+
+IAM permissions to DMS (already shared)
+https://docs.aws.amazon.com/dms/latest/userguide/security-iam.html#CHAP_Security.IAMPermissions
+
+VPC endpoints for RDS Oracle and Redshift to transfer data using non-public network. More info can be found here:
+https://docs.aws.amazon.com/dms/latest/userguide/CHAP_Endpoints.Creating.html
+
+Grant below privileges to Oracle user specified in the Oracle endpoint connection (technical replication user). Replace "db_user" with the name of technical replication user:
+
+GRANT CREATE SESSION to db_user;
+GRANT SELECT ANY TRANSACTION to db_user;
+GRANT SELECT on DBA_TABLESPACES to db_user;
+GRANT SELECT ON any-replicated-table to db_user;
+GRANT EXECUTE on rdsadmin.rdsadmin_util to db_user;
+GRANT LOGMINING to db_user; 
+
+
+
+GRANT SELECT ON DATA.PARAMETROS to db_user;
+GRANT SELECT ON DATA.scv_customer to db_user;
+GRANT SELECT ON DATA.TMP_WINDBACK to db_user;
+GRANT SELECT ON DATA.V_PH_ORDER to db_user;
+GRANT SELECT ON DATA.WRK_CLAWBACK to db_user;
+GRANT SELECT ON DATA.WRK_DIRECTORIO_TIENDAS to db_user;
+GRANT SELECT ON DATA.WRK_HIST_CAMPAIGN  to db_user;
+GRANT SELECT ON DATA.WRK_INVALID_EMAIL to db_user;
+GRANT SELECT ON DATA.WRK_LLAMA_REASIGNACIONES to db_user;
+GRANT SELECT ON DATA.WRK_NUBEFONE_OUTPUT to db_user;
+GRANT SELECT ON DATA.WRK_PH_ORDER_B to db_user;
+GRANT SELECT ON DATA.WRK_SEGUROS_EQUIVALENCIAS to db_user;
+GRANT SELECT ON DATA.WRK_SERVICIOS_TOTAL_RED to db_user;
+GRANT SELECT ON DATA.WRK_TABLA_GAMA to db_user;
+GRANT SELECT ON DATA.WRK_TTB_VENTAS to db_user;
+
+
+GRANT EXECUTE ON SYS.DBMS_CRYPTO TO db_user;
+
+GRANT SELECT on ALL_VIEWS to db_user;
+
+ALTER on any-replicated-table;
+
+GRANT ALTER ON DATA.PARAMETROS  to db_user;
+GRANT ALTER ON DATA.scv_customer to db_user;
+GRANT ALTER ON DATA.TMP_WINDBACK to db_user;
+-- GRANT ALTER ON DATA.V_PH_ORDER to db_user;
+GRANT ALTER ON DATA.WRK_CLAWBACK to db_user;
+GRANT ALTER ON DATA.WRK_DIRECTORIO_TIENDAS to db_user;
+GRANT ALTER ON DATA.WRK_HIST_CAMPAIGN  to db_user;
+GRANT ALTER ON DATA.WRK_INVALID_EMAIL to db_user;
+GRANT ALTER ON DATA.WRK_LLAMA_REASIGNACIONES to db_user;
+GRANT ALTER ON DATA.WRK_NUBEFONE_OUTPUT to db_user;
+GRANT ALTER ON DATA.WRK_PH_ORDER_B to db_user;
+GRANT ALTER ON DATA.WRK_SEGUROS_EQUIVALENCIAS to db_user;
+GRANT ALTER ON DATA.WRK_SERVICIOS_TOTAL_RED to db_user;
+GRANT ALTER ON DATA.WRK_TABLA_GAMA to db_user;
+GRANT ALTER ON DATA.WRK_TTB_VENTAS to db_user;
+
+ALTER DATABASE ADD SUPPLEMENTAL LOG DATA;
+
+GRANT EXECUTE on DBMS_LOGMNR to db_user;
+GRANT SELECT on V_$LOGMNR_LOGS to db_user;
+GRANT SELECT on V_$LOGMNR_CONTENTS to db_user;
+GRANT LOGMINING to db_user;
+GRANT EXECUTE on rdsadmin.rdsadmin_util to db_user;
+
+
+exec rdsadmin.rdsadmin_util.grant_sys_object('ALL_VIEWS', 'db_user', 'SELECT');
+exec rdsadmin.rdsadmin_util.grant_sys_object('ALL_TAB_PARTITIONS', 'db_user', 'SELECT');
+exec rdsadmin.rdsadmin_util.grant_sys_object('ALL_INDEXES', 'db_user', 'SELECT');
+exec rdsadmin.rdsadmin_util.grant_sys_object('ALL_OBJECTS', 'db_user', 'SELECT');
+exec rdsadmin.rdsadmin_util.grant_sys_object('ALL_TABLES', 'db_user', 'SELECT');
+exec rdsadmin.rdsadmin_util.grant_sys_object('ALL_USERS', 'db_user', 'SELECT');
+exec rdsadmin.rdsadmin_util.grant_sys_object('ALL_CATALOG', 'db_user', 'SELECT');
+exec rdsadmin.rdsadmin_util.grant_sys_object('ALL_CONSTRAINTS', 'db_user', 'SELECT');
+exec rdsadmin.rdsadmin_util.grant_sys_object('ALL_CONS_COLUMNS', 'db_user', 'SELECT');
+exec rdsadmin.rdsadmin_util.grant_sys_object('ALL_TAB_COLS', 'db_user', 'SELECT');
+exec rdsadmin.rdsadmin_util.grant_sys_object('ALL_IND_COLUMNS', 'db_user', 'SELECT');
+exec rdsadmin.rdsadmin_util.grant_sys_object('ALL_LOG_GROUPS', 'db_user', 'SELECT');
+exec rdsadmin.rdsadmin_util.grant_sys_object('V_$ARCHIVED_LOG', 'db_user', 'SELECT');
+exec rdsadmin.rdsadmin_util.grant_sys_object('V_$LOG', 'db_user', 'SELECT');
+exec rdsadmin.rdsadmin_util.grant_sys_object('V_$LOGFILE', 'db_user', 'SELECT');
+exec rdsadmin.rdsadmin_util.grant_sys_object('V_$DATABASE', 'db_user', 'SELECT');
+exec rdsadmin.rdsadmin_util.grant_sys_object('V_$THREAD', 'db_user', 'SELECT');
+exec rdsadmin.rdsadmin_util.grant_sys_object('V_$PARAMETER', 'db_user', 'SELECT');
+exec rdsadmin.rdsadmin_util.grant_sys_object('V_$NLS_PARAMETERS', 'db_user', 'SELECT');
+exec rdsadmin.rdsadmin_util.grant_sys_object('V_$TIMEZONE_NAMES', 'db_user', 'SELECT');
+exec rdsadmin.rdsadmin_util.grant_sys_object('V_$TRANSACTION', 'db_user', 'SELECT');
+exec rdsadmin.rdsadmin_util.grant_sys_object('V_$CONTAINERS', 'db_user', 'SELECT');
+exec rdsadmin.rdsadmin_util.grant_sys_object('DBA_REGISTRY', 'db_user', 'SELECT');
+exec rdsadmin.rdsadmin_util.grant_sys_object('OBJ$', 'db_user', 'SELECT');
+exec rdsadmin.rdsadmin_util.grant_sys_object('ALL_ENCRYPTED_COLUMNS', 'db_user', 'SELECT');
+exec rdsadmin.rdsadmin_util.grant_sys_object('V_$LOGMNR_LOGS', 'db_user', 'SELECT');
+exec rdsadmin.rdsadmin_util.grant_sys_object('V_$LOGMNR_CONTENTS','db_user','SELECT');
+exec rdsadmin.rdsadmin_util.grant_sys_object('DBMS_LOGMNR', 'db_user', 'EXECUTE');
+
+-- (as of Oracle versions 12.1 and higher)
+exec rdsadmin.rdsadmin_util.grant_sys_object('REGISTRY$SQLPATCH', 'db_user', 'SELECT');
+
+-- (for Amazon RDS Active Dataguard Standby (ADG))
+exec rdsadmin.rdsadmin_util.grant_sys_object('V_$STANDBY_LOG', 'db_user', 'SELECT'); 
+
+-- (for transparent data encryption (TDE))
+exec rdsadmin.rdsadmin_util.grant_sys_object('ENC$', 'db_user', 'SELECT'); 
+               
+-- (for validation with LOB columns)
+exec rdsadmin.rdsadmin_util.grant_sys_object('DBMS_CRYPTO', 'db_user', 'EXECUTE');
+                    
+-- Required when the source database is Oracle Data guard, and Oracle Standby is used in the latest release of DMS version 3.4.6, version 3.4.7, and higher.
+exec rdsadmin.rdsadmin_util.grant_sys_object('V_$DATAGUARD_STATS', 'db_user', 'SELECT');
+                    
+exec rdsadmin.rdsadmin_util.alter_supplemental_logging('ADD');
+exec rdsadmin.rdsadmin_util.alter_supplemental_logging('ADD','PRIMARY KEY');
+                
+
+GRANT SELECT ON MOTOR_PRODUCTO.PRODUCT TO DATA_RO;
+GRANT SELECT ON MOTOR_PRODUCTO.BASE_PRODUCT TO DATA_RO;
+GRANT SELECT ON MOTOR_PRODUCTO.PRCLASS3 TO DATA_RO;
+
+
+-- This will enable supplemental logging feature on database level which will be then used for specific tables and columns (mainly primary keys)
+--ALTER DATABASE ADD SUPPLEMENTAL LOG DATA; 
+
+-- 
+GRANT SELECT ON VISTA_UNICA.CUSTOMER to data_ro;
+GRANT SELECT ON VISTA_UNICA.IMACS_ACT to data_ro;
+GRANT SELECT ON data.v_ph_order TO data_ro;
+
+
+ALTER TABLE VISTA_UNICA.CUSTOMER ADD SUPPLEMENTAL LOG DATA (PRIMARY KEY) COLUMNS;
+ALTER TABLE VISTA_UNICA.IMACS_ACT ADD SUPPLEMENTAL LOG DATA (PRIMARY KEY) COLUMNS;
+ALTER TABLE DATA.SCV_CUSTOMER ADD SUPPLEMENTAL LOG DATA (PRIMARY KEY) COLUMNS;
+ALTER TABLE MOTOR_PRODUCTO.BASE_PRODUCT ADD SUPPLEMENTAL LOG DATA (PRIMARY KEY) COLUMNS;
+ALTER TABLE MOTOR_PRODUCTO.PRCLASS3 ADD SUPPLEMENTAL LOG DATA (PRIMARY KEY) COLUMNS;
+ALTER TABLE MOTOR_PRODUCTO.PRODUCT ADD SUPPLEMENTAL LOG DATA (PRIMARY KEY) COLUMNS;
+ALTER TABLE DATA.PARAMETROS ADD SUPPLEMENTAL LOG DATA (ALL) COLUMNS;
+ALTER TABLE DATA.WRK_CLAWBACK ADD SUPPLEMENTAL LOG DATA (ALL) COLUMNS;
+ALTER TABLE DATA.WRK_DIRECTORIO_TIENDAS ADD SUPPLEMENTAL LOG DATA (ALL) COLUMNS;
+ALTER TABLE DATA.WRK_HIST_CAMPAIGN  ADD SUPPLEMENTAL LOG DATA (ALL) COLUMNS;
+ALTER TABLE DATA.WRK_INVALID_EMAIL ADD SUPPLEMENTAL LOG DATA (ALL) COLUMNS;
+ALTER TABLE DATA.WRK_LLAMA_REASIGNACIONES ADD SUPPLEMENTAL LOG DATA (ALL) COLUMNS;
+ALTER TABLE DATA.WRK_NUBEFONE_OUTPUT ADD SUPPLEMENTAL LOG DATA (ALL) COLUMNS;
+ALTER TABLE DATA.WRK_PH_ORDER_B ADD SUPPLEMENTAL LOG DATA (ALL) COLUMNS;
+ALTER TABLE DATA.WRK_SEGUROS_EQUIVALENCIAS ADD SUPPLEMENTAL LOG DATA (ALL) COLUMNS;
+ALTER TABLE DATA.WRK_SERVICIOS_TOTAL_RED ADD SUPPLEMENTAL LOG DATA (ALL) COLUMNS;
+ALTER TABLE DATA.WRK_TABLA_GAMA ADD SUPPLEMENTAL LOG DATA (ALL) COLUMNS;
+ALTER TABLE DATA.WRK_TTB_VENTAS ADD SUPPLEMENTAL LOG DATA (ALL) COLUMNS;
+
+
